@@ -130,7 +130,6 @@ class Regimeswitching(object):
         # normal distribution
         # f(y_t|S_t,S_t-1,omegta_t-1)
         if log == False:
-            # mu = self.H[j] @ self.a_predict[t,i,j] + self.A[j] @ self.x[t].T #D * 1
             left = 1/(((2*np.pi)**(self.D/2))*np.sqrt(np.linalg.det(self.f[t,i,j])))
 #=================================================ここがおかしい↓
             right = np.exp((-1/2)*(self.eta[t,i,j].T @ np.linalg.inv(self.f[t,i,j]) @ self.eta[t,i,j]))#expないが大きすぎてが0になる
@@ -158,13 +157,18 @@ class Regimeswitching(object):
             self.filtering(t)
             self.HamiltonFilter(t)
             self.marginal_estimate(t)
-        # self.log_likilihood = np.log(self.marginal_likelihood)
-        print("p:{},q:{},c0:{},c1:{},F:{},a0:{}\n LogLikelihood:{}".format(p,q,tr[2],tr[3],beta,self.a0,np.round(-np.sum(self.marginal_loglikelihood),5)))
+        print("p:{},q:{},c0:{},c1:{},F:{},a0:{}\n \
+              LogLikelihood:{}".format(p,q,tr[2],tr[3],beta,self.a0,np.round(-np.sum(self.marginal_loglikelihood),5)))
         if __name__ == "__main__":
             return {"pro":self.marginal_probability,"a":self.a_marginal,"trance":self.TRANCE} # T*M :Pr(S_t|omega_t)
         else:
             return np.round(-np.sum(self.marginal_loglikelihood),5)
-        # return self.eta
+
+    def smoothing(self):
+        # Pr(S_t = i,S_{t-1} = j | omega_T)
+        for i in range(self.len-1,-1,-1):
+            print(i)
+        return print('smoothing')
 
     def par_opt(self):
         pp = 1
