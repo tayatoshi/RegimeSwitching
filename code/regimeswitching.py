@@ -39,8 +39,9 @@ class Regimeswitching(object):
         self.TRANCE = 0.5 * np.ones([2,2])# Pr(S_t|S_t-1)/M * M
         self.pi0 = np.array([(1 - self.TRANCE[1,1])/(2 - self.TRANCE[0,0] - self.TRANCE[1,1]),
                              (1 - self.TRANCE[0,0])/(2 - self.TRANCE[0,0] - self.TRANCE[1,1])])# [pr(s_0=0|omega_0)=1-p/2-p-q, pr(s_0=1|omega_0)=1-q/2-p-q]
-        self.c = np.ones([self.M,self.J])# constant: M * J
-        self.F = np.ones([self.M,self.J,self.J])*0.7# M * J * J
+        # self.c = np.ones([self.M,self.J])# constant: M * J
+        self.c = np.array([30,60])# constant: M * J
+        self.F = np.ones([self.M,self.J,self.J])#*0.6# M * J * J
         self.H = np.ones([self.M,self.D,self.J])# M * D * J
         self.A = np.zeros([self.M,self.D,self.K])# M * D * K
         self.Q = np.ones([self.M,self.J,self.J])#state error variance matrix: J * J
@@ -57,6 +58,7 @@ class Regimeswitching(object):
         self.marginal_probability = np.zeros([self.len,self.M]) # T*M :Pr(S_t|omega_t)
         self.marginal_likelihood = np.zeros(self.len)# f(y_t|omega_t-1)
         self.marginal_loglikelihood = np.zeros(self.len)# f(y_t|omega_t-1)
+        # self.log_likilihood = np.zeros(self.len)
         self.a_marginal = np.zeros([self.len,self.M,self.J])# a_{t|t}^{j}:T * M * J
         self.p_marginal = np.zeros([self.len,self.M,self.J,self.J])# T * M * J * J
         return print("OK")
@@ -66,7 +68,9 @@ class Regimeswitching(object):
         Trance = self.TRANCE
         result = self.par_opt()
         print("time:{}".format(datetime.now() - start))
-        return {'LogLikelihood':np.sum(self.marginal_loglikelihood),'trance':self.TRANCE, 'marginal_a':self.a_marginal, 'marginal_probability':self.marginal_probability,'c':self.c}
+        # return {'likelihood':np.sum(self.marginal_likelihood),'trance':self.TRANCE, 'marginal_a':self.a_marginal, 'marginal_probability':self.marginal_probability,'c':self.c}
+        self.estimation = {'likelihood':np.sum(self.marginal_likelihood),'trance':self.TRANCE, 'marginal_a':self.a_marginal, 'marginal_probability':self.marginal_probability,'c':self.c}
+        return self.estimation
 
     def predict(self,t):
         if t==0:
@@ -115,6 +119,7 @@ class Regimeswitching(object):
                     denominator = 0.0001
                 else:
                     denominator = self.marginal_probability[t,j]
+                # denominator = self.marginal_probability[t,j]
             a_molecule = np.zeros((self.a_filter[t]).shape)
             for ii,jj in itertools.product(range(self.M),range(self.M)):
                 a_molecule[ii,jj] = self.a_filter[t,ii,jj] * self.joint_filter_probability[t,ii,jj]#分子
@@ -135,7 +140,7 @@ class Regimeswitching(object):
             right = np.exp((-1/2)*(self.eta[t,i,j].T @ np.linalg.inv(self.f[t,i,j]) @ self.eta[t,i,j]))#expないが大きすぎてが0になる
             Likelihood = left * right
         else:
-            log_left = -(self.D/2)*np.log(2*np.pi) - (1/2)*np.log(np.linalg.det(self.f[t,i,j]))
+            log_left = (-1/2)*np.log(2*np.pi) - (1/2)*np.log(np.linalg.det(self.f[t,i,j]))
             log_right = (-1/2)*(self.eta[t,i,j].T @ np.linalg.inv(self.f[t,i,j]) @ self.eta[t,i,j])
             Likelihood = log_left + log_right
         return Likelihood
@@ -157,27 +162,31 @@ class Regimeswitching(object):
             self.filtering(t)
             self.HamiltonFilter(t)
             self.marginal_estimate(t)
-        print("p:{},q:{},c0:{},c1:{},F:{},a0:{}\n \
-              LogLikelihood:{}".format(p,q,tr[2],tr[3],beta,self.a0,np.round(-np.sum(self.marginal_loglikelihood),5)))
+        print("p:{},q:{},c0:{},c1:{},F:{},a0:{}\n likelihood:{}".format(p,q,tr[2],tr[3],beta,self.a0,np.round(-np.sum(self.marginal_loglikelihood),5)))
         if __name__ == "__main__":
             return {"pro":self.marginal_probability,"a":self.a_marginal,"trance":self.TRANCE} # T*M :Pr(S_t|omega_t)
         else:
             return np.round(-np.sum(self.marginal_loglikelihood),5)
-
-    def smoothing(self):
-        # Pr(S_t = i,S_{t-1} = j | omega_T)
-        for i in range(self.len-1,-1,-1):
-            print(i)
-        return print('smoothing')
+        # return self.eta
 
     def par_opt(self):
-        pp = 1
-        qq = 1
-        c0 = 30
-        c1 = 60
-        beta = 0.6
-        a00= 30
-        a01= 60
+        pp=np.random.uniform(0,5)
+        qq=np.random.uniform(0,5)
+        # pp = 1
+        # qq = 1
+        # c0 = 30
+        # c1 = 60
+        c0 = np.random.normal(20,3)
+        c1 = np.random.normal(60,3)
+        # c0= np.random.uniform(0,100)
+        # c1= np.random.uniform(0,100)
+        beta = 1
+        # a00= np.random.uniform(0,100)
+        # a01= np.random.uniform(0,100)
+        # a00= 30
+        a00 = np.random.normal(20,3)
+        a01 = np.random.normal(60,3)
+        # a01= 60
         tr = np.array([pp,qq,c0,c1,beta,a00,a01])
         RESULT = optimize.minimize(self.model,tr)
         # RESULT = optimize.basinhopping(self.model,tr)
